@@ -34,6 +34,8 @@ CANT_FIND = [
 ]
 
 g_current_keyboard = {}
+wotb = wg.WOTBTankopedia()
+
 
 def format_vehicle_message(vehicle):
     msg_pattern = u"""
@@ -58,13 +60,16 @@ def format_vehicle_message(vehicle):
     msg = msg_pattern % context
     return msg
 
+
 def start(bot, update):
     msg = random.choice(HELLO).format(update.message.from_user.first_name)
     update.message.reply_text(msg)
 
+
 def help(bot, update):
     msg = random.choice(HELP)
     update.message.reply_text(msg)
+
 
 def on_vehicle_not_found(bot, update):
     reply_markup = None
@@ -98,7 +103,7 @@ def on_many_vehicles_found(bot, update, vehicles):
 
 
 def on_message(bot, update):
-    choices = wg.get_choices_for_request(update.message.text)
+    choices = wotb.search(update.message.text)
     if len(choices) == 0:
         on_vehicle_not_found(bot, update)
     elif len(choices) == 1:
@@ -111,8 +116,9 @@ def inline_search(bot, update):
     query = update.inline_query.query
     if not query or len(query) < 2:
         return
+
     results = list()
-    choices = reversed(wg.get_choices_for_request(query))
+    choices = wotb.search(query)
     for choice in choices:
         results.append(
             InlineQueryResultArticle(

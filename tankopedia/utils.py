@@ -1,16 +1,5 @@
 from decimal import Decimal
 
-class cached_value(dict):
-    def __init__(self, func):
-        self.func = func
-
-    def __call__(self, *args):
-        return self[args]
-
-    def __missing__(self, key):
-        result = self[key] = self.func(*key)
-        return result
-
 
 def moneyfmt(value, places=0, curr='', sep=',', dp='.',
              pos='', neg='-', trailneg=''):

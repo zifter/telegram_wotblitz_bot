@@ -1,9 +1,10 @@
-#coding=utf8
+# coding=utf8
+from functools import lru_cache
+import logging
 import utils
 
-import relevant_search
+import search
 import hashlib
-import random
 import json
 import requests
 import decimal
@@ -29,24 +30,31 @@ NATION = {
     'france': u'Франция',
     'uk': u'Великобритания',
     'japan': u'Япония',
+    'european': u'Сборная Европы',
     'other': u'BLITZ',
     'none': u'',
 }
 
 TYPE = {
-    'lightTank' : u'ЛТ',
-    'mediumTank' : u'CT',
-    'heavyTank' : u'TT',
-    'AT-SPG' : u'ПТ-САУ',
-    'SPG' : u'ПТ',
+    'lightTank': u'ЛТ',
+    'mediumTank': u'CT',
+    'heavyTank': u'TT',
+    'AT-SPG': u'ПТ-САУ',
+    'SPG': u'ПТ',
 }
 
+
+def prepare_for_search(value):
+    return value.replace('.', '').replace('-', '').lower()
+
+
 class VehicleData(object):
-    def __init__(self, json_data, json_loc_data):
+    def __init__(self, json_data, localized_data):
         self.name = json_data['name']
+        self.localized_names = [data['name'] for data in localized_data.values()]
+        self.search_names = [prepare_for_search(name) for name in self.localized_names]
         self.image_preview = json_data['images']['preview']
         self.image_normal = json_data['images']['normal']
-        self.localized_names = [json_data['name'], json_loc_data['name']]
         self.uuid = hashlib.md5(self.name.encode('utf-8')).hexdigest(),
         self.nation = json_data['nation']
         self.is_premium = json_data['is_premium']
@@ -55,8 +63,11 @@ class VehicleData(object):
         cost = json_data['cost']
         self.cost_gold = cost['price_gold'] if cost  else None
         self.cost_credit = cost['price_credit'] if cost else None
-        self.description = json_loc_data['description']
+        self.description = localized_data['ru']['description']  # TODO
         self.tankopedia_url = 'http://wiki.wargaming.net/ru/Blitz:{}'.format('MS-1')
+
+    def __repr__(self):
+        return self.name
 
     def get_loc_name(self):
         return self.localized_names[1]
@@ -75,42 +86,55 @@ class VehicleData(object):
         return u'0'
 
 
-@utils.cached_value
-def get_all_data():
-    responseAll = requests.get(GET_ALL_VEHICLE_URL)
-    assert responseAll.ok == True
-    contentAll = json.loads(responseAll.content)
+class WOTBTankopedia(object):
+    def __init__(self):
+        self.vehicles = get_all_data()
 
-    responseLoc = requests.get(GET_LOC_VEHICLE_URL)
-    assert responseLoc.ok == True
-    contentLoc = json.loads(responseLoc.content)
+    def search(self, query):
+        result = []
+        search_query = prepare_for_search(query)
+        for data in self.vehicles.values():
+            for name in data.search_names:
+                ratio = search.ratio(search_query, name)
+
+                if ratio > 0:
+                    result.append((ratio, data))
+
+        result = sorted(result, key=lambda v: v[0], reverse=True)
+        result = [value[1] for value in result[0:5] if value[0] > 0.5]
+        logging.info(result)
+        return result
+
+
+def get_all_data():
+    response_all = requests.get(GET_ALL_VEHICLE_URL)
+    assert response_all.ok == True
+    content_all = json.loads(response_all.content)
+
+    response_loc = requests.get(GET_LOC_VEHICLE_URL)
+    assert response_loc.ok == True
+    content_loc = json.loads(response_loc.content)
 
     data = dict()
-    for k, v in contentAll['data'].items():
-        print(v['name'])
-        d = VehicleData(v, contentLoc['data'][k])
-        loc_name = contentLoc['data'][k]['name']
-        data[v['name']] = d
-        data[loc_name] = d
+    for k, v in content_all['data'].items():
+        loc_data = content_loc['data'][k]
+        localized_data = {
+            'en': v,
+            'ru': loc_data,  # TODO Other localizations
+        }
+        d = VehicleData(v, localized_data)
+        data[d.name] = d
 
     return data
 
 
-@utils.cached_value
+@lru_cache(maxsize=1)
 def get_vehicle_names():
     return get_all_data().keys()
 
 
 def get_vehicle_data(name):
     return get_all_data()[name]
-
-
-def get_nearest_vehicle_names(name):
-    names = get_vehicle_names()
-    if name in names:
-        return [name]
-
-    return relevant_search.search(name, get_vehicle_names())
 
 
 def get_choices_for_request(name):
@@ -123,6 +147,7 @@ def tests():
     assert get_choices_for_request(u'T34')[0].name == 'T34'
     # assert get_choices_for_vehicle_name('Т-34')[0]['name'] == 'Т-34'
     # TODO Расстояние махаланобиса, выгрузить все локализации, полные имена и короткие и составлять список подходящих танков
+
 
 if __name__ == '__main__':
     tests()
