@@ -1,40 +1,22 @@
-#coding=utf8
+# coding=utf8
 import random
-import logging
 
-import wg
+from wg import WOTBTankopedia
 from telegram.ext import Updater, CommandHandler, MessageHandler, InlineQueryHandler, Filters
-from telegram import ParseMode, InlineQueryResultArticle, InputTextMessageContent, ReplyKeyboardMarkup, ReplyKeyboardHide
+from telegram import ParseMode, InlineQueryResultArticle, InputTextMessageContent, ReplyKeyboardMarkup, \
+    ReplyKeyboardRemove
 from config import TELEGRAM_TOKEN
-
+from telegrambot.constants import HELLO, HELP, CANT_DETECT, CANT_FIND
 
 import logging
+
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s: %(name)s: %(levelname)s: %(message)s')
 g_logger = logging.getLogger()
 g_logger.setLevel(logging.DEBUG)
 
-HELLO = [
-    u'Привет, {}! Я бот танкопедии WOT Blitz!',
-    u'Здарова, {}! Я знаю все про танки из WOT Blitz!',
-]
-
-HELP = [
-    u'Я бот танкопедии WOT Blitz! Напиши мне имя танка, и я покажу тебе информацию о нем! Например:'
-]
-
-CANT_DETECT = [
-    u'Таакс, что-то не совсем понял, какой ты танк хочешь, давай выберем?',
-    u'Выбери, какой конкретно танк ты имеешь ввиду.'
-]
-
-CANT_FIND = [
-    u'Я не понимать :( Попробуй уточнить имя танка.',
-    u'Уточни, какой танк ты хочешь. Попробуй уточнить имя танка.'
-]
-
 g_current_keyboard = {}
-wotb = wg.WOTBTankopedia()
+wotb = WOTBTankopedia()
 
 
 def format_vehicle_message(vehicle):
@@ -75,7 +57,7 @@ def on_vehicle_not_found(bot, update):
     reply_markup = None
     if update.message.chat_id in g_current_keyboard:
         g_current_keyboard.pop(update.message.chat_id)
-        reply_markup = ReplyKeyboardHide()
+        reply_markup = ReplyKeyboardRemove()
 
     bot.sendMessage(chat_id=update.message.chat_id, text=random.choice(CANT_FIND), reply_markup=reply_markup)
 
@@ -86,7 +68,7 @@ def on_one_vehicle_found(bot, update, vehicle):
     reply_markup = None
     if update.message.chat_id in g_current_keyboard:
         g_current_keyboard.pop(update.message.chat_id)
-        reply_markup = ReplyKeyboardHide()
+        reply_markup = ReplyKeyboardRemove()
 
     bot.sendMessage(chat_id=update.message.chat_id, text=msg, parse_mode=ParseMode.HTML, reply_markup=reply_markup)
 
@@ -128,13 +110,12 @@ def inline_search(bot, update):
                 thumb_width=200,
                 thumb_height=200,
                 input_message_content=InputTextMessageContent(format_vehicle_message(choice), parse_mode=ParseMode.HTML)
-                 )
+            )
         )
     bot.answerInlineQuery(update.inline_query.id, results)
 
 
 def run():
-    wg.get_all_data()
     g_logger.info('Start bot...')
     updater = Updater(TELEGRAM_TOKEN)
 
