@@ -9,9 +9,7 @@ import requests
 from Levenshtein import ratio as levenshtein_ratio
 
 from config import WG_APP_ID
-from wg.constants import NATION, TYPE
-
-HOST = 'https://api.wotblitz.ru'
+from wg.constants import NATION, TYPE, HOST
 
 GET_ALL_VEHICLE_URL = '{host}/wotb/encyclopedia/vehicles/' \
                       '?application_id={app_id}' \
@@ -97,14 +95,14 @@ class WOTBTankopedia(object):
 
         return None
 
-    def search(self, query):
+    def fuzzy_search_vehicle(self, query):
         vehicle_data = self.find_by_localized_name(query)
         if vehicle_data:
             return [vehicle_data]
 
         relevant_result = []
         search_query = _prepare_for_search(query)
-        for data in self.vehicles.values():
+        for data in self.vehicles:
             for name in data.search_names:
                 ratio = levenshtein_ratio(search_query, name)
 

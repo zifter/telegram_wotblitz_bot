@@ -1,3 +1,4 @@
+HOST = 'https://api.wotblitz.ru'
 NATION = {
     'ussr': u'СССР',
     'germany': u'Германия',
