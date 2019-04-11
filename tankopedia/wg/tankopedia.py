@@ -41,7 +41,7 @@ class VehicleData(object):
         self.cost_gold = cost['price_gold'] if cost else None
         self.cost_credit = cost['price_credit'] if cost else None
         self.description = localized_data['ru']['description']  # TODO
-        self.tankopedia_url = None # TODO
+        self.tankopedia_url = 'wiki.wargaming.net/index.php?fulltext=Search&search={}'.format(self.name)
 
     def __repr__(self):
         return self.name
