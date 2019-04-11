@@ -29,7 +29,7 @@ class VehicleData(object):
     def __init__(self, json_data, localized_data):
         self.name = json_data['name']
         self.localized_names = [data['name'] for data in localized_data.values()]
-        self.search_names = [_prepare_for_search(name) for name in self.localized_names]
+        self.search_names = set([_prepare_for_search(name) for name in self.localized_names])
         self.image_preview = json_data['images']['preview']
         self.image_normal = json_data['images']['normal']
         self.uuid = hashlib.md5(self.name.encode('utf-8')).hexdigest(),
@@ -41,7 +41,7 @@ class VehicleData(object):
         self.cost_gold = cost['price_gold'] if cost else None
         self.cost_credit = cost['price_credit'] if cost else None
         self.description = localized_data['ru']['description']  # TODO
-        self.tankopedia_url = 'http://wiki.wargaming.net/ru/Blitz:{}'.format('MS-1')
+        self.tankopedia_url = None # TODO
 
     def __repr__(self):
         return self.name
