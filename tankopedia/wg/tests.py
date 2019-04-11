@@ -25,6 +25,13 @@ class WOTBAccountTestCase(TestCase):
         detailed = self.wotb.get_player_info_by_name("zifter")
         self.assertEqual(detailed[0].raw.created_at, 1415187883)
 
+    def test_get_mozgoid_ok(self):
+        detailed = self.wotb.get_player_info_by_name("mozgoid", accurate=False)
+        self.assertEqual(len(detailed), 2)
+
+        detailed = self.wotb.get_player_info_by_name("mozgoid", accurate=True)
+        self.assertEqual(detailed[0].raw.account_id, 305521)
+
     def test_search_ang_get_zifter_ok(self):
         detailed = self.wotb.fuzzy_search_and_get_info("zifter")
         self.assertEqual(detailed[0].raw.created_at, 1415187883)

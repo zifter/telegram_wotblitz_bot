@@ -91,7 +91,8 @@ def on_message(bot, update):
     elif len(choices) > 1:
         on_many_vehicles_found(bot, update, choices)
     else:
-        choices = accounts.fuzzy_search(update.message.text)[0:10]
+        accurate = update.message.chat_id in g_current_keyboard and g_current_keyboard[update.message.chat_id]
+        choices = accounts.fuzzy_search(update.message.text, accurate=accurate)[0:10]
         if len(choices) == 1:
             on_one_account_found(bot, update, choices[0])
         elif len(choices) > 1:

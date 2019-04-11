@@ -41,23 +41,31 @@ class WOTBAccounts(object):
     def __init__(self):
         pass
 
-    def fuzzy_search(self, name):
+    def fuzzy_search(self, name, accurate=False):
         if len(name) <= 3:
             return []
 
         response = requests.get(SEARCH_ACCOUNT + '&search={}'.format(name))
-        if response.ok:
-            data = json.loads(response.content)
-            if 'data' in data:
-                return [Account(**acc) for acc in data['data']]
+        if not response.ok:
+            return []
 
-        return []
+        data = json.loads(response.content)
+        if 'data' not in data:
+            return []
+
+        accounts = [Account(**acc) for acc in data['data']]
+        if accurate:
+            accurate_list = [acc for acc in accounts if acc.nickname.lower() == name.lower()]
+            if accurate_list:
+                accounts = accurate_list
+
+        return accounts
 
     def fuzzy_search_and_get_info(self, name):
         return self.get_player_info_for([acc.account_id for acc in self.fuzzy_search(name)])
 
-    def get_player_info_by_name(self, name):
-        accounts = self.fuzzy_search(name)
+    def get_player_info_by_name(self, name, accurate=False):
+        accounts = self.fuzzy_search(name, accurate=accurate)
         if len(accounts) > 0:
             return self.get_player_info_for([acc.account_id for acc in accounts])
 
